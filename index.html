@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hứng Vía May Mắn</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 400px;
+            height: 600px;
+            background: linear-gradient(180deg, #87CEEB 0%, #98FB98 100%);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Frame 1 - Màn chào */
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #FFD700, #FFA500, #FF6347);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .welcome-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: #fff;
+            margin-bottom: 40px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .play-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Frame 2 - Game play */
+        .game-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .game-header {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .score {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 80px);
+            overflow: hidden;
+        }
+
+        .clouds {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><circle cx="20" cy="10" r="8" fill="white" opacity="0.6"/><circle cx="40" cy="8" r="6" fill="white" opacity="0.4"/><circle cx="70" cy="12" r="7" fill="white" opacity="0.5"/></svg>') repeat-x;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100px); }
+        }
+
+        .lucky-item {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #FFD700, #FFA500);
+            border-radius: 50%;
+            border: 3px solid #FF6347;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            animation: fall linear;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .lucky-item::before {
+            content: '🍀';
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(-50px) rotate(0deg);
+            }
+            to {
+                transform: translateY(650px) rotate(360deg);
+            }
+        }
+
+        .basket {
+            position: absolute;
+            bottom: 20px;
+            width: 80px;
+            height: 60px;
+            background: linear-gradient(45deg, #8B4513, #D2691E);
+            border-radius: 0 0 40px 40px;
+            border: 3px solid #654321;
+            transition: left 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .basket::before {
+            content: '🧺';
+        }
+
+        /* Frame 3 - Kết quả */
+        .result-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .result-title {
+            font-size: 24px;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .caught-count {
+            font-size: 48px;
+            color: #FFD700;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .gift-box {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            border-radius: 10px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            animation: giftPulse 2s infinite;
+        }
+
+        @keyframes giftPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .gift-name {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .result-btn {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .result-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-10px);
+            }
+            60% {
+                transform: translateY(-5px);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .game-container {
+                max-width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Frame 1: Màn chào -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <h1 class="welcome-title">🍀 HỨNG VÍA MAY MẮN 🍀</h1>
+            <p class="welcome-subtitle">Hứng vía liền tay – Quà hay về ngay!</p>
+            <button class="play-btn" onclick="startGame()">🎮 Chơi ngay</button>
+        </div>
+
+        <!-- Frame 2: Game play -->
+        <div class="game-screen" id="gameScreen">
+            <div class="game-header">
+                <div class="score">Vía đã hứng: <span id="scoreCount">0</span></div>
+            </div>
+            <div class="game-area" id="gameArea">
+                <div class="clouds"></div>
+                <div class="basket" id="basket"></div>
+            </div>
+        </div>
+
+        <!-- Frame 3: Kết quả -->
+        <div class="result-screen" id="resultScreen">
+            <h2 class="result-title">🎉 Chúc mừng bạn! 🎉</h2>
+            <div class="caught-count" id="finalScore">0</div>
+            <div class="gift-box" id="giftBox">🎁</div>
+            <div class="gift-name" id="giftName">Quà may mắn</div>
+            <div class="result-buttons">
+                <button class="result-btn" onclick="claimGift()">🎁 Nhận quà ngay</button>
+                <button class="result-btn" onclick="resetGame()">🔄 Chơi lại</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            score: 0,
+            isPlaying: false,
+            basketPosition: 160,
+            gameInterval: null,
+            spawnInterval: null,
+            gameTime: 0,
+            maxGameTime: 15000, // 15 giây
+            luckyItems: []
+        };
+
+        const gifts = {
+            0: { name: "Chúc bạn may mắn lần sau!", icon: "😊", color: "#95a5a6" },
+            1: { name: "Quà A - Phiếu giảm giá 10%", icon: "🎫", color: "#e74c3c" },
+            2: { name: "Quà B - Phiếu giảm giá 20%", icon: "🎟️", color: "#f39c12" },
+            3: { name: "Quà C - Phiếu giảm giá 30%", icon: "🏆", color: "#f1c40f" },
+            4: { name: "Quà D - Phiếu giảm giá 40%", icon: "💎", color: "#9b59b6" },
+            5: { name: "Quà E - Phiếu giảm giá 50%", icon: "👑", color: "#2ecc71" }
+        };
+
+        function startGame() {
+            document.getElementById('welcomeScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            
+            gameState.isPlaying = true;
+            gameState.score = 0;
+            gameState.gameTime = 0;
+            gameState.luckyItems = [];
+            
+            updateScore();
+            
+            // Bắt đầu spawn vía
+            gameState.spawnInterval = setInterval(spawnLuckyItem, 1500);
+            
+            // Đếm thời gian game
+            gameState.gameInterval = setInterval(() => {
+                gameState.gameTime += 100;
+                if (gameState.gameTime >= gameState.maxGameTime) {
+                    endGame();
+                }
+            }, 100);
+            
+            // Điều khiển giỏ hứng
+            setupBasketControl();
+        }
+
+        function spawnLuckyItem() {
+            if (!gameState.isPlaying) return;
+            
+            const gameArea = document.getElementById('gameArea');
+            const luckyItem = document.createElement('div');
+            luckyItem.className = 'lucky-item';
+            
+            const randomX = Math.random() * (gameArea.offsetWidth - 40);
+            luckyItem.style.left = randomX + 'px';
+            luckyItem.style.top = '-50px';
+            
+            const fallDuration = 3 + Math.random() * 2; // 3-5 giây
+            luckyItem.style.animationDuration = fallDuration + 's';
+            
+            gameArea.appendChild(luckyItem);
+            
+            const itemData = {
+                element: luckyItem,
+                x: randomX,
+                y: -50,
+                speed: 600 / (fallDuration * 60), // tốc độ pixel/frame
+                caught: false
+            };
+            
+            gameState.luckyItems.push(itemData);
+            
+            // Xóa item sau khi animation kết thúc
+            setTimeout(() => {
+                if (luckyItem.parentNode && !itemData.caught) {
+                    luckyItem.remove();
+                    const index = gameState.luckyItems.indexOf(itemData);
+                    if (index > -1) {
+                        gameState.luckyItems.splice(index, 1);
+                    }
+                }
+            }, fallDuration * 1000);
+        }
+
+        function setupBasketControl() {
+            const gameContainer = document.querySelector('.game-container');
+            const basket = document.getElementById('basket');
+            
+            let isMouseDown = false;
+            
+            // Mouse events
+            gameContainer.addEventListener('mousedown', (e) => {
+                if (!gameState.isPlaying) return;
+                isMouseDown = true;
+                updateBasketPosition(e);
+            });
+            
+            gameContainer.addEventListener('mousemove', (e) => {
+                if (!gameState.isPlaying || !isMouseDown) return;
+                updateBasketPosition(e);
+            });
+            
+            gameContainer.addEventListener('mouseup', () => {
+                isMouseDown = false;
+            });
+            
+            // Touch events
+            gameContainer.addEventListener('touchstart', (e) => {
+                if (!gameState.isPlaying) return;
+                e.preventDefault();
+                updateBasketPosition(e.touches[0]);
+            });
+            
+            gameContainer.addEventListener('touchmove', (e) => {
+                if (!gameState.isPlaying) return;
+                e.preventDefault();
+                updateBasketPosition(e.touches[0]);
+            });
+            
+            // Collision detection
+            setInterval(checkCollisions, 16); // ~60fps
+        }
+
+        function updateBasketPosition(event) {
+            const gameContainer = document.querySelector('.game-container');
+            const basket = document.getElementById('basket');
+            const rect = gameContainer.getBoundingClientRect();
+            
+            const x = event.clientX - rect.left;
+            const basketWidth = basket.offsetWidth;
+            const maxX = gameContainer.offsetWidth - basketWidth;
+            
+            gameState.basketPosition = Math.max(0, Math.min(maxX, x - basketWidth / 2));
+            basket.style.left = gameState.basketPosition + 'px';
+        }
+
+        function checkCollisions() {
+            if (!gameState.isPlaying) return;
+            
+            const basket = document.getElementById('basket');
+            const basketRect = basket.getBoundingClientRect();
+            const gameContainer = document.querySelector('.game-container');
+            const gameRect = gameContainer.getBoundingClientRect();
+            
+            gameState.luckyItems.forEach((item, index) => {
+                if (item.caught) return;
+                
+                const itemRect = item.element.getBoundingClientRect();
+                
+                // Kiểm tra va chạm
+                if (itemRect.bottom >= basketRect.top &&
+                    itemRect.top <= basketRect.bottom &&
+                    itemRect.right >= basketRect.left &&
+                    itemRect.left <= basketRect.right) {
+                    
+                    // Đã hứng được
+                    item.caught = true;
+                    gameState.score++;
+                    updateScore();
+                    
+                    // Hiệu ứng khi hứng được
+                    item.element.style.animation = 'none';
+                    item.element.style.transform = 'scale(0)';
+                    item.element.style.transition = 'transform 0.3s ease';
+                    
+                    setTimeout(() => {
+                        if (item.element.parentNode) {
+                            item.element.remove();
+                        }
+                    }, 300);
+                    
+                    gameState.luckyItems.splice(index, 1);
+                }
+            });
+        }
+
+        function updateScore() {
+            document.getElementById('scoreCount').textContent = gameState.score;
+        }
+
+        function endGame() {
+            gameState.isPlaying = false;
+            clearInterval(gameState.gameInterval);
+            clearInterval(gameState.spawnInterval);
+            
+            // Xóa tất cả vía còn lại
+            gameState.luckyItems.forEach(item => {
+                if (item.element.parentNode) {
+                    item.element.remove();
+                }
+            });
+            gameState.luckyItems = [];
+            
+            showResult();
+        }
+
+        function showResult() {
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'flex';
+            
+            const finalScore = Math.min(gameState.score, 5); // Tối đa 5 vía
+            document.getElementById('finalScore').textContent = finalScore;
+            
+            const gift = gifts[finalScore];
+            document.getElementById('giftBox').textContent = gift.icon;
+            document.getElementById('giftBox').style.background = `linear-gradient(45deg, ${gift.color}, #FF8E53)`;
+            document.getElementById('giftName').textContent = gift.name;
+        }
+
+        function claimGift() {
+            const gift = gifts[Math.min(gameState.score, 5)];
+            alert(`🎉 Bạn đã nhận được: ${gift.name}!`);
+            
+            // Ở đây bạn có thể gọi API Laravel để lưu phần quà
+            // fetch('/api/claim-gift', { method: 'POST', ... })
+        }
+
+        function resetGame() {
+            // Reset game state
+            gameState = {
+                score: 0,
+                isPlaying: false,
+                basketPosition: 160,
+                gameInterval: null,
+                spawnInterval: null,
+                gameTime: 0,
+                maxGameTime: 15000,
+                luckyItems: []
+            };
+            
+            // Hiển thị lại màn chào
+            document.getElementById('resultScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('welcomeScreen').style.display = 'flex';
+            
+            // Reset basket position
+            const basket = document.getElementById('basket');
+            basket.style.left = '160px';
+        }
+
+        // Khởi tạo vị trí giỏ hứng ban đầu
+        window.addEventListener('load', () => {
+            const basket = document.getElementById('basket');
+            basket.style.left = gameState.basketPosition + 'px';
+        });
+    </script>
+</body>
+</html>
