@@ -127,11 +127,14 @@
 
         .lucky-item {
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             background: radial-gradient(circle, #FFD700, #FFA500);
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             border-radius: 50%;
-            border: 3px solid #FF6347;
+            border: 2px solid rgba(255, 255, 255, 0.8);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -140,11 +143,21 @@
             z-index: 5;
         }
 
+        .lucky-item.has-image {
+            border: none;
+            border-radius: 0;
+            background-color: transparent;
+        }
+
+        .lucky-item.has-image::before {
+            content: '';
+        }
+
         .lucky-item::before {
             content: '🍀';
         }
 
-        @keyframes fallStraight {
+        @keyframes fallFromTop {
             from {
                 transform: translateY(-50px) rotate(0deg);
             }
@@ -153,51 +166,87 @@
             }
         }
 
-        @keyframes fallZigzag {
+        @keyframes fallFromLeft {
+            from {
+                transform: translateX(-50px) translateY(100px) rotate(0deg);
+            }
+            to {
+                transform: translateX(450px) translateY(650px) rotate(360deg);
+            }
+        }
+
+        @keyframes fallFromRight {
+            from {
+                transform: translateX(50px) translateY(100px) rotate(0deg);
+            }
+            to {
+                transform: translateX(-450px) translateY(650px) rotate(360deg);
+            }
+        }
+
+        @keyframes fallFromCenter {
             0% {
-                transform: translateY(-50px) translateX(0) rotate(0deg);
+                transform: translateY(200px) translateX(0) scale(0) rotate(0deg);
+                opacity: 0;
+            }
+            20% {
+                transform: translateY(200px) translateX(0) scale(1) rotate(72deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(650px) translateX(0) scale(1) rotate(360deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fallZigzagFromLeft {
+            0% {
+                transform: translateX(-50px) translateY(50px) rotate(0deg);
             }
             25% {
-                transform: translateY(150px) translateX(20px) rotate(90deg);
+                transform: translateX(100px) translateY(200px) rotate(90deg);
             }
             50% {
-                transform: translateY(350px) translateX(-15px) rotate(180deg);
+                transform: translateX(300px) translateY(350px) rotate(180deg);
             }
             75% {
-                transform: translateY(500px) translateX(25px) rotate(270deg);
+                transform: translateX(200px) translateY(500px) rotate(270deg);
             }
             100% {
-                transform: translateY(650px) translateX(0) rotate(360deg);
+                transform: translateX(400px) translateY(650px) rotate(360deg);
             }
         }
 
-        @keyframes fallCurve {
+        @keyframes fallZigzagFromRight {
             0% {
-                transform: translateY(-50px) translateX(0) rotate(0deg);
-            }
-            33% {
-                transform: translateY(200px) translateX(-30px) rotate(120deg);
-            }
-            66% {
-                transform: translateY(400px) translateX(30px) rotate(240deg);
-            }
-            100% {
-                transform: translateY(650px) translateX(0) rotate(360deg);
-            }
-        }
-
-        @keyframes fallSpiral {
-            0% {
-                transform: translateY(-50px) translateX(0) rotate(0deg) scale(1);
+                transform: translateX(50px) translateY(50px) rotate(0deg);
             }
             25% {
-                transform: translateY(150px) translateX(40px) rotate(90deg) scale(0.8);
+                transform: translateX(-100px) translateY(200px) rotate(90deg);
+            }
+            50% {
+                transform: translateX(-300px) translateY(350px) rotate(180deg);
+            }
+            75% {
+                transform: translateX(-200px) translateY(500px) rotate(270deg);
+            }
+            100% {
+                transform: translateX(-400px) translateY(650px) rotate(360deg);
+            }
+        }
+
+        @keyframes fallSpiralFromCenter {
+            0% {
+                transform: translateY(150px) translateX(0) rotate(0deg) scale(0.5);
+            }
+            25% {
+                transform: translateY(250px) translateX(80px) rotate(90deg) scale(1);
             }
             50% {
                 transform: translateY(350px) translateX(0) rotate(180deg) scale(1.2);
             }
             75% {
-                transform: translateY(500px) translateX(-40px) rotate(270deg) scale(0.9);
+                transform: translateY(450px) translateX(-80px) rotate(270deg) scale(0.8);
             }
             100% {
                 transform: translateY(650px) translateX(0) rotate(360deg) scale(1);
@@ -207,16 +256,30 @@
         .basket {
             position: absolute;
             bottom: 20px;
-            width: 80px;
-            height: 60px;
+            width: 90px;
+            height: 70px;
             background: linear-gradient(45deg, #8B4513, #D2691E);
-            border-radius: 0 0 40px 40px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 0 0 45px 45px;
             border: 3px solid #654321;
             transition: left 0.1s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .basket.has-image {
+            border: none;
+            border-radius: 0;
+            background-color: transparent;
+        }
+
+        .basket.has-image::before {
+            content: '';
         }
 
         .basket::before {
@@ -420,7 +483,27 @@
             5: { name: "Quà E - Phiếu giảm giá 50%", icon: "👑", color: "#2ecc71" }
         };
 
-        const fallAnimations = ['fallStraight', 'fallZigzag', 'fallCurve', 'fallSpiral'];
+        // Cấu hình hình ảnh (có thể thay đổi đường dẫn)
+        const gameImages = {
+            luckyItems: [
+                // Thêm đường dẫn hình ảnh vía của bạn vào đây
+                // 'images/lucky1.png',
+                // 'images/lucky2.png', 
+                // 'images/lucky3.png',
+                // ... có thể thêm nhiều hình khác nhau
+            ],
+            basket: '' // Đường dẫn hình ảnh giỏ hứng
+            // basket: 'images/basket.png'
+        };
+
+        const fallAnimations = {
+            top: ['fallFromTop'],
+            left: ['fallFromLeft', 'fallZigzagFromLeft'],
+            right: ['fallFromRight', 'fallZigzagFromRight'],
+            center: ['fallFromCenter', 'fallSpiralFromCenter']
+        };
+
+        const spawnPositions = ['top', 'left', 'right', 'center'];
 
         // Audio functions
         function toggleMusic() {
@@ -507,45 +590,86 @@
             const luckyItem = document.createElement('div');
             luckyItem.className = 'lucky-item';
             
-            // Random vị trí X
-            const randomX = Math.random() * (gameArea.offsetWidth - 40);
-            luckyItem.style.left = randomX + 'px';
-            luckyItem.style.top = '-50px';
+            // Random vị trí xuất hiện
+            const spawnPosition = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+            const gameWidth = gameArea.offsetWidth;
+            const gameHeight = gameArea.offsetHeight;
             
-            // Random loại animation rơi
-            const randomAnimation = fallAnimations[Math.floor(Math.random() * fallAnimations.length)];
+            let startX, startY, animationType;
+            
+            switch(spawnPosition) {
+                case 'top':
+                    // Xuất hiện từ trên xuống - vị trí X ngẫu nhiên
+                    startX = Math.random() * (gameWidth - 50);
+                    startY = -50;
+                    animationType = fallAnimations.top[Math.floor(Math.random() * fallAnimations.top.length)];
+                    break;
+                    
+                case 'left':
+                    // Xuất hiện từ bên trái - vị trí Y ngẫu nhiên trong 1/3 trên của màn hình
+                    startX = -50;
+                    startY = Math.random() * (gameHeight / 3);
+                    animationType = fallAnimations.left[Math.floor(Math.random() * fallAnimations.left.length)];
+                    break;
+                    
+                case 'right':
+                    // Xuất hiện từ bên phải - vị trí Y ngẫu nhiên trong 1/3 trên của màn hình
+                    startX = gameWidth;
+                    startY = Math.random() * (gameHeight / 3);
+                    animationType = fallAnimations.right[Math.floor(Math.random() * fallAnimations.right.length)];
+                    break;
+                    
+                case 'center':
+                    // Xuất hiện từ giữa màn hình
+                    startX = gameWidth / 2 - 25; // Căn giữa
+                    startY = gameHeight / 4; // 1/4 màn hình từ trên
+                    animationType = fallAnimations.center[Math.floor(Math.random() * fallAnimations.center.length)];
+                    break;
+            }
+            
+            luckyItem.style.left = startX + 'px';
+            luckyItem.style.top = startY + 'px';
+            
+            // Random thời gian animation
             const fallDuration = 3 + Math.random() * 3; // 3-6 giây
+            luckyItem.style.animation = `${animationType} ${fallDuration}s linear`;
             
-            luckyItem.style.animation = `${randomAnimation} ${fallDuration}s linear`;
-            
-            // Random màu sắc và biểu tượng vía
-            const luckyIcons = ['🍀', '💎', '⭐', '🎯', '🔥', '💰', '🎁', '✨'];
-            const randomIcon = luckyIcons[Math.floor(Math.random() * luckyIcons.length)];
-            luckyItem.setAttribute('data-icon', randomIcon);
-            luckyItem.style.setProperty('--lucky-icon', `"${randomIcon}"`);
-            luckyItem.innerHTML = randomIcon;
-            
-            // Random màu gradient
-            const colors = [
-                ['#FFD700', '#FFA500'], // Vàng
-                ['#FF6B6B', '#FF8E53'], // Đỏ cam
-                ['#4ECDC4', '#44A08D'], // Xanh lá
-                ['#A8EDEA', '#FED6E3'], // Hồng xanh
-                ['#FFE53B', '#FF2525'], // Vàng đỏ
-                ['#21D4FD', '#B721FF']  // Xanh tím
-            ];
-            const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            luckyItem.style.background = `radial-gradient(circle, ${randomColor[0]}, ${randomColor[1]})`;
+            // Kiểm tra có hình ảnh tùy chỉnh không
+            if (gameImages.luckyItems.length > 0) {
+                // Sử dụng hình ảnh PNG
+                const randomImage = gameImages.luckyItems[Math.floor(Math.random() * gameImages.luckyItems.length)];
+                luckyItem.style.backgroundImage = `url('${randomImage}')`;
+                luckyItem.addClass = 'has-image';
+                luckyItem.classList.add('has-image');
+                luckyItem.innerHTML = ''; // Xóa emoji
+            } else {
+                // Sử dụng emoji và màu như cũ
+                const luckyIcons = ['🍀', '💎', '⭐', '🎯', '🔥', '💰', '🎁', '✨'];
+                const randomIcon = luckyIcons[Math.floor(Math.random() * luckyIcons.length)];
+                luckyItem.innerHTML = randomIcon;
+                
+                // Random màu gradient
+                const colors = [
+                    ['#FFD700', '#FFA500'], // Vàng
+                    ['#FF6B6B', '#FF8E53'], // Đỏ cam
+                    ['#4ECDC4', '#44A08D'], // Xanh lá
+                    ['#A8EDEA', '#FED6E3'], // Hồng xanh
+                    ['#FFE53B', '#FF2525'], // Vàng đỏ
+                    ['#21D4FD', '#B721FF']  // Xanh tím
+                ];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                luckyItem.style.background = `radial-gradient(circle, ${randomColor[0]}, ${randomColor[1]})`;
+            }
             
             gameArea.appendChild(luckyItem);
             
             const itemData = {
                 element: luckyItem,
-                x: randomX,
-                y: -50,
-                speed: 600 / (fallDuration * 60), // tốc độ pixel/frame
+                x: startX,
+                y: startY,
+                spawnPosition: spawnPosition,
                 caught: false,
-                animation: randomAnimation
+                animation: animationType
             };
             
             gameState.luckyItems.push(itemData);
@@ -559,7 +683,7 @@
                         gameState.luckyItems.splice(index, 1);
                     }
                 }
-            }, fallDuration * 1000);
+            }, fallDuration * 1000 + 500); // Thêm 500ms buffer
         }
 
         function setupBasketControl() {
@@ -734,10 +858,16 @@
             basket.style.left = '160px';
         }
 
-        // Khởi tạo vị trí giỏ hứng ban đầu
+        // Khởi tạo vị trí giỏ hứng ban đầu và thiết lập hình ảnh
         window.addEventListener('load', () => {
             const basket = document.getElementById('basket');
             basket.style.left = gameState.basketPosition + 'px';
+            
+            // Thiết lập hình ảnh giỏ hứng nếu có
+            if (gameImages.basket) {
+                basket.style.backgroundImage = `url('${gameImages.basket}')`;
+                basket.classList.add('has-image');
+            }
         });
     </script>
 </body>
