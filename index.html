@@ -97,12 +97,38 @@
             padding: 15px;
             text-align: center;
             backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .score {
             font-size: 20px;
             font-weight: bold;
             color: #333;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A);
+            border-radius: 3px;
+            transition: width 0.1s ease;
+            width: 100%;
         }
 
         .game-area {
@@ -141,6 +167,8 @@
             font-size: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             z-index: 5;
+            transition: all 0.1s ease-out;
+            will-change: transform;
         }
 
         .lucky-item.has-image {
@@ -440,6 +468,10 @@
         <div class="game-screen" id="gameScreen">
             <div class="game-header">
                 <div class="score">Vía đã hứng: <span id="scoreCount">0</span></div>
+                <div class="game-info">
+                    <div>Thời gian: <div class="progress-bar"><div class="progress-fill" id="timeProgress"></div></div></div>
+                    <div>Vía: <span id="itemCount">0</span></div>
+                </div>
             </div>
             <div class="game-area" id="gameArea">
                 <div class="clouds"></div>
@@ -468,10 +500,12 @@
             gameInterval: null,
             spawnInterval: null,
             gameTime: 0,
-            maxGameTime: 15000, // 15 giây
+            maxGameTime: 25000, // Tăng lên 25 giây do nhiều vía hơn
             luckyItems: [],
             musicEnabled: true,
-            soundEnabled: true
+            soundEnabled: true,
+            maxItems: 6, // Tăng giới hạn để có nhiều vía cùng lúc
+            difficulty: 1
         };
 
         const gifts = {
@@ -553,8 +587,11 @@
             gameState.score = 0;
             gameState.gameTime = 0;
             gameState.luckyItems = [];
+            gameState.difficulty = 1;
+            gameState.maxItems = 15;
             
             updateScore();
+            updateItemCount();
             
             // Phát nhạc nền
             if (gameState.musicEnabled) {
@@ -562,18 +599,19 @@
                 bgMusic.play().catch(e => console.log('Không thể phát nhạc:', e));
             }
             
-            // Bắt đầu spawn vía với tần suất ngẫu nhiên
-            gameState.spawnInterval = setInterval(() => {
-                spawnLuckyItem();
-                // Random thời gian spawn tiếp theo (800ms - 2000ms)
-                clearInterval(gameState.spawnInterval);
-                const nextSpawn = 800 + Math.random() * 1200;
-                gameState.spawnInterval = setInterval(spawnLuckyItem, nextSpawn);
-            }, 1000);
+            // Bắt đầu spawn vía với hệ thống thông minh
+            startSpawning();
             
-            // Đếm thời gian game
+            // Đếm thời gian game và tăng độ khó
             gameState.gameInterval = setInterval(() => {
                 gameState.gameTime += 100;
+                updateTimeProgress();
+                
+                // Tăng độ khó mỗi 3 giây
+                if (gameState.gameTime % 3000 === 0) {
+                    increaseDifficulty();
+                }
+                
                 if (gameState.gameTime >= gameState.maxGameTime) {
                     endGame();
                 }
@@ -583,8 +621,70 @@
             setupBasketControl();
         }
 
+        function startSpawning() {
+            function massSpawnWave() {
+                if (!gameState.isPlaying) return;
+                
+                // Xóa các vía cũ đã hết thời gian (tự động cleanup)
+                cleanupOldItems();
+                
+                // Spawn 1 wave nhiều vía cùng lúc
+                const waveSize = Math.floor(2 + (gameState.difficulty * 1.5)); // 2-6 vía mỗi wave
+                const actualSpawnCount = Math.min(waveSize, gameState.maxItems - gameState.luckyItems.length);
+                
+                for (let i = 0; i < actualSpawnCount; i++) {
+                    setTimeout(() => {
+                        if (gameState.isPlaying) {
+                            spawnLuckyItem();
+                        }
+                    }, i * 100); // Delay nhỏ giữa các vía trong cùng 1 wave (100ms)
+                }
+                
+                // Tính thời gian cho wave tiếp theo
+                const baseWaveInterval = Math.max(2000, 4000 - (gameState.difficulty * 200)); // 2-4 giây giữa các wave
+                const randomVariation = Math.random() * 1000; // ±500ms variation
+                const nextWaveTime = 300 + randomVariation;
+                
+                setTimeout(massSpawnWave, nextWaveTime);
+            }
+            
+            // Bắt đầu wave đầu tiên sau 1 giây
+            setTimeout(massSpawnWave, 1000);
+        }
+
+        function cleanupOldItems() {
+            gameState.luckyItems = gameState.luckyItems.filter(item => {
+                const age = Date.now() - item.spawnTime;
+                const maxAge = item.duration * 1000 + 2000; // Duration + 2s buffer
+                
+                if (age > maxAge && item.element.parentNode) {
+                    item.element.remove();
+                    return false;
+                }
+                return true;
+            });
+            updateItemCount();
+        }
+
+        function increaseDifficulty() {
+            gameState.difficulty += 0.3;
+            gameState.maxItems = Math.min(20, 15 + Math.floor(gameState.difficulty / 2)); // Tăng từ 15 lên 20
+            
+            // Thông báo tăng độ khó (có thể bỏ comment để test)
+            // console.log(`Độ khó: ${gameState.difficulty.toFixed(1)}, Max vía: ${gameState.maxItems}`);
+        }
+
+        function updateTimeProgress() {
+            const progress = ((gameState.maxGameTime - gameState.gameTime) / gameState.maxGameTime) * 100;
+            document.getElementById('timeProgress').style.width = progress + '%';
+        }
+
+        function updateItemCount() {
+            document.getElementById('itemCount').textContent = gameState.luckyItems.length;
+        }
+
         function spawnLuckyItem() {
-            if (!gameState.isPlaying) return;
+            if (!gameState.isPlaying || gameState.luckyItems.length >= gameState.maxItems) return;
             
             const gameArea = document.getElementById('gameArea');
             const luckyItem = document.createElement('div');
@@ -599,30 +699,26 @@
             
             switch(spawnPosition) {
                 case 'top':
-                    // Xuất hiện từ trên xuống - vị trí X ngẫu nhiên
                     startX = Math.random() * (gameWidth - 50);
                     startY = -50;
                     animationType = fallAnimations.top[Math.floor(Math.random() * fallAnimations.top.length)];
                     break;
                     
                 case 'left':
-                    // Xuất hiện từ bên trái - vị trí Y ngẫu nhiên trong 1/3 trên của màn hình
                     startX = -50;
                     startY = Math.random() * (gameHeight / 3);
                     animationType = fallAnimations.left[Math.floor(Math.random() * fallAnimations.left.length)];
                     break;
                     
                 case 'right':
-                    // Xuất hiện từ bên phải - vị trí Y ngẫu nhiên trong 1/3 trên của màn hình
                     startX = gameWidth;
                     startY = Math.random() * (gameHeight / 3);
                     animationType = fallAnimations.right[Math.floor(Math.random() * fallAnimations.right.length)];
                     break;
                     
                 case 'center':
-                    // Xuất hiện từ giữa màn hình
-                    startX = gameWidth / 2 - 25; // Căn giữa
-                    startY = gameHeight / 4; // 1/4 màn hình từ trên
+                    startX = gameWidth / 2 - 25;
+                    startY = gameHeight / 4;
                     animationType = fallAnimations.center[Math.floor(Math.random() * fallAnimations.center.length)];
                     break;
             }
@@ -630,32 +726,31 @@
             luckyItem.style.left = startX + 'px';
             luckyItem.style.top = startY + 'px';
             
-            // Random thời gian animation
-            const fallDuration = 3 + Math.random() * 3; // 3-6 giây
-            luckyItem.style.animation = `${animationType} ${fallDuration}s linear`;
+            // Tính toán thời gian animation dựa trên độ khó
+            const baseDuration = 4;
+            const difficultyModifier = Math.max(0.5, 1 - (gameState.difficulty * 0.1)); // Nhanh hơn khi khó hơn
+            const fallDuration = (baseDuration * difficultyModifier) + (Math.random() * 2);
+            
+            luckyItem.style.animation = `${animationType} ${fallDuration}s cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
             
             // Kiểm tra có hình ảnh tùy chỉnh không
             if (gameImages.luckyItems.length > 0) {
-                // Sử dụng hình ảnh PNG
                 const randomImage = gameImages.luckyItems[Math.floor(Math.random() * gameImages.luckyItems.length)];
                 luckyItem.style.backgroundImage = `url('${randomImage}')`;
-                luckyItem.addClass = 'has-image';
                 luckyItem.classList.add('has-image');
-                luckyItem.innerHTML = ''; // Xóa emoji
+                luckyItem.innerHTML = '';
             } else {
-                // Sử dụng emoji và màu như cũ
                 const luckyIcons = ['🍀', '💎', '⭐', '🎯', '🔥', '💰', '🎁', '✨'];
                 const randomIcon = luckyIcons[Math.floor(Math.random() * luckyIcons.length)];
                 luckyItem.innerHTML = randomIcon;
                 
-                // Random màu gradient
                 const colors = [
-                    ['#FFD700', '#FFA500'], // Vàng
-                    ['#FF6B6B', '#FF8E53'], // Đỏ cam
-                    ['#4ECDC4', '#44A08D'], // Xanh lá
-                    ['#A8EDEA', '#FED6E3'], // Hồng xanh
-                    ['#FFE53B', '#FF2525'], // Vàng đỏ
-                    ['#21D4FD', '#B721FF']  // Xanh tím
+                    ['#FFD700', '#FFA500'],
+                    ['#FF6B6B', '#FF8E53'],
+                    ['#4ECDC4', '#44A08D'],
+                    ['#A8EDEA', '#FED6E3'],
+                    ['#FFE53B', '#FF2525'],
+                    ['#21D4FD', '#B721FF']
                 ];
                 const randomColor = colors[Math.floor(Math.random() * colors.length)];
                 luckyItem.style.background = `radial-gradient(circle, ${randomColor[0]}, ${randomColor[1]})`;
@@ -669,21 +764,26 @@
                 y: startY,
                 spawnPosition: spawnPosition,
                 caught: false,
-                animation: animationType
+                animation: animationType,
+                duration: fallDuration,
+                spawnTime: Date.now()
             };
             
             gameState.luckyItems.push(itemData);
+            updateItemCount();
             
-            // Xóa item sau khi animation kết thúc
+            // Auto cleanup với buffer time
             setTimeout(() => {
                 if (luckyItem.parentNode && !itemData.caught) {
                     luckyItem.remove();
                     const index = gameState.luckyItems.indexOf(itemData);
                     if (index > -1) {
                         gameState.luckyItems.splice(index, 1);
+                    updateItemCount();
+                        updateItemCount();
                     }
                 }
-            }, fallDuration * 1000 + 500); // Thêm 500ms buffer
+            }, fallDuration * 1000 + 1000);
         }
 
         function setupBasketControl() {
@@ -794,22 +894,32 @@
         function endGame() {
             gameState.isPlaying = false;
             clearInterval(gameState.gameInterval);
-            clearInterval(gameState.spawnInterval);
             
             // Dừng nhạc nền
             const bgMusic = document.getElementById('bgMusic');
             bgMusic.pause();
             bgMusic.currentTime = 0;
             
-            // Xóa tất cả vía còn lại
-            gameState.luckyItems.forEach(item => {
-                if (item.element.parentNode) {
-                    item.element.remove();
-                }
+            // Xóa tất cả vía còn lại với hiệu ứng
+            gameState.luckyItems.forEach((item, index) => {
+                setTimeout(() => {
+                    if (item.element.parentNode) {
+                        item.element.style.animation = 'none';
+                        item.element.style.transform = 'scale(0) rotate(180deg)';
+                        item.element.style.transition = 'transform 0.5s ease';
+                        setTimeout(() => {
+                            item.element.remove();
+                        }, 500);
+                    }
+                }, index * 50); // Stagger effect
             });
-            gameState.luckyItems = [];
             
-            showResult();
+            gameState.luckyItems = [];
+            updateItemCount();
+            
+            setTimeout(() => {
+                showResult();
+            }, 1000);
         }
 
         function showResult() {
@@ -835,6 +945,9 @@
 
         function resetGame() {
             // Reset game state
+            const currentMusicEnabled = gameState.musicEnabled;
+            const currentSoundEnabled = gameState.soundEnabled;
+            
             gameState = {
                 score: 0,
                 isPlaying: false,
@@ -842,10 +955,13 @@
                 gameInterval: null,
                 spawnInterval: null,
                 gameTime: 0,
-                maxGameTime: 15000,
+                maxGameTime: 20000,
                 luckyItems: [],
-                musicEnabled: gameState.musicEnabled, // Giữ lại cài đặt âm thanh
-                soundEnabled: gameState.soundEnabled
+                musicEnabled: currentMusicEnabled,
+                soundEnabled: currentSoundEnabled,
+                spawnRate: 600,
+                maxItems: 8,
+                difficulty: 1
             };
             
             // Hiển thị lại màn chào
